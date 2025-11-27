@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
+    networks:
+      - monitor-net
+
+  app-generator:
+    build: ./app_generator
+    depends_on:
+      - db
+    restart: always
+    networks:
+      - monitor-net
+    ports:
+      - "8000:8000"
+
+  auth-server:
+    build: ./auth_server
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./auth_data:/data
+    networks:
+      - monitor-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - monitor-net
+
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    networks:
+      - monitor-net
+
+networks:
+  monitor-net:
+    driver: bridge
